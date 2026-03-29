@@ -1,40 +1,45 @@
+import { loadEnv, requireEnv, createLogger, withRetry } from "@glaciereq/shared";
+loadEnv();
+const { ASANA_API_TOKEN } = requireEnv("ASANA_API_TOKEN");
+const log = createLogger("asana-mcp");
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
 const BASE = "https://app.asana.com/api/1.0";
-const TOKEN = process.env.ASANA_API_TOKEN;
-
-if (!TOKEN) throw new Error("ASANA_API_TOKEN is required");
 
 const headers = {
-  Authorization: `Bearer ${TOKEN}`,
+  Authorization: `Bearer ${ASANA_API_TOKEN}`,
   "Content-Type": "application/json",
   Accept: "application/json",
 };
 
 async function asana(path: string, method = "GET", body?: unknown) {
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`Asana ${method} ${path} → ${res.status}: ${await res.text()}`);
-  return res.json();
+  return withRetry(
+    async () => {
+      log.debug(`${method} ${path}`);
+      const res = await fetch(`${BASE}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (!res.ok) throw new Error(`Asana ${method} ${path} → ${res.status}: ${await res.text()}`);
+      return res.json();
+    },
+    { label: `asana:${method}:${path}` }
+  );
 }
 
 const server = new McpServer({ name: "asana-mcp", version: "1.0.0" });
 
-// ── WORKSPACES ──────────────────────────────────────────────────────────────
 server.tool("list_workspaces", "List all Asana workspaces", {}, async () => {
   const data = await asana("/workspaces");
   return { content: [{ type: "text", text: JSON.stringify(data.data, null, 2) }] };
 });
 
-// ── PROJECTS ────────────────────────────────────────────────────────────────
 server.tool(
-  "search_projects",
-  "Search projects in a workspace",
+  "search_projects", "Search projects in a workspace",
   { workspace_gid: z.string(), name_filter: z.string().optional() },
   async ({ workspace_gid, name_filter }) => {
     const data = await asana(`/projects?workspace=${workspace_gid}&opt_fields=gid,name,status,owner,due_date,notes`);
@@ -46,8 +51,7 @@ server.tool(
 );
 
 server.tool(
-  "get_project",
-  "Get full project details",
+  "get_project", "Get full project details",
   { project_gid: z.string() },
   async ({ project_gid }) => {
     const data = await asana(`/projects/${project_gid}?opt_fields=gid,name,notes,status,owner,due_date,team,members,custom_fields`);
@@ -56,47 +60,26 @@ server.tool(
 );
 
 server.tool(
-  "create_project",
-  "Create a new project",
-  {
-    workspace_gid: z.string(),
-    name: z.string(),
-    notes: z.string().optional(),
-    due_date: z.string().optional(),
-    team_gid: z.string().optional(),
-  },
+  "create_project", "Create a new project",
+  { workspace_gid: z.string(), name: z.string(), notes: z.string().optional(), due_date: z.string().optional(), team_gid: z.string().optional() },
   async ({ workspace_gid, name, notes, due_date, team_gid }) => {
-    const data = await asana("/projects", "POST", {
-      data: { workspace: workspace_gid, name, notes, due_date, team: team_gid },
-    });
+    const data = await asana("/projects", "POST", { data: { workspace: workspace_gid, name, notes, due_date, team: team_gid } });
     return { content: [{ type: "text", text: JSON.stringify(data.data, null, 2) }] };
   }
 );
 
 server.tool(
-  "update_project",
-  "Update project name, notes, or status",
-  {
-    project_gid: z.string(),
-    name: z.string().optional(),
-    notes: z.string().optional(),
-    due_date: z.string().optional(),
-  },
+  "update_project", "Update project name, notes, or status",
+  { project_gid: z.string(), name: z.string().optional(), notes: z.string().optional(), due_date: z.string().optional() },
   async ({ project_gid, ...fields }) => {
     const data = await asana(`/projects/${project_gid}`, "PUT", { data: fields });
     return { content: [{ type: "text", text: JSON.stringify(data.data, null, 2) }] };
   }
 );
 
-// ── TASKS ────────────────────────────────────────────────────────────────────
 server.tool(
-  "list_tasks",
-  "List tasks in a project",
-  {
-    project_gid: z.string(),
-    completed: z.boolean().optional(),
-    assignee: z.string().optional(),
-  },
+  "list_tasks", "List tasks in a project",
+  { project_gid: z.string(), completed: z.boolean().optional(), assignee: z.string().optional() },
   async ({ project_gid, completed, assignee }) => {
     let url = `/tasks?project=${project_gid}&opt_fields=gid,name,completed,assignee,due_date,notes,tags,custom_fields,subtasks`;
     if (completed !== undefined) url += `&completed=${completed}`;
@@ -107,8 +90,7 @@ server.tool(
 );
 
 server.tool(
-  "get_task",
-  "Get full task details including subtasks",
+  "get_task", "Get full task details including subtasks",
   { task_gid: z.string() },
   async ({ task_gid }) => {
     const [task, subtasks] = await Promise.all([
@@ -120,36 +102,17 @@ server.tool(
 );
 
 server.tool(
-  "create_task",
-  "Create a new task",
-  {
-    project_gid: z.string(),
-    name: z.string(),
-    notes: z.string().optional(),
-    assignee: z.string().optional(),
-    due_date: z.string().optional(),
-    parent_gid: z.string().optional(),
-    tags: z.array(z.string()).optional(),
-  },
+  "create_task", "Create a new task",
+  { project_gid: z.string(), name: z.string(), notes: z.string().optional(), assignee: z.string().optional(), due_date: z.string().optional(), parent_gid: z.string().optional(), tags: z.array(z.string()).optional() },
   async ({ project_gid, name, notes, assignee, due_date, parent_gid, tags }) => {
-    const data = await asana("/tasks", "POST", {
-      data: { projects: [project_gid], name, notes, assignee, due_on: due_date, parent: parent_gid, tags },
-    });
+    const data = await asana("/tasks", "POST", { data: { projects: [project_gid], name, notes, assignee, due_on: due_date, parent: parent_gid, tags } });
     return { content: [{ type: "text", text: JSON.stringify(data.data, null, 2) }] };
   }
 );
 
 server.tool(
-  "update_task",
-  "Update task fields",
-  {
-    task_gid: z.string(),
-    name: z.string().optional(),
-    notes: z.string().optional(),
-    completed: z.boolean().optional(),
-    assignee: z.string().optional(),
-    due_date: z.string().optional(),
-  },
+  "update_task", "Update task fields",
+  { task_gid: z.string(), name: z.string().optional(), notes: z.string().optional(), completed: z.boolean().optional(), assignee: z.string().optional(), due_date: z.string().optional() },
   async ({ task_gid, ...fields }) => {
     const body: Record<string, unknown> = {};
     if (fields.name) body.name = fields.name;
@@ -163,8 +126,7 @@ server.tool(
 );
 
 server.tool(
-  "delete_task",
-  "Delete a task permanently",
+  "delete_task", "Delete a task permanently",
   { task_gid: z.string() },
   async ({ task_gid }) => {
     await asana(`/tasks/${task_gid}`, "DELETE");
@@ -173,8 +135,7 @@ server.tool(
 );
 
 server.tool(
-  "add_comment",
-  "Add a comment/story to a task",
+  "add_comment", "Add a comment/story to a task",
   { task_gid: z.string(), text: z.string() },
   async ({ task_gid, text }) => {
     const data = await asana(`/tasks/${task_gid}/stories`, "POST", { data: { text } });
@@ -183,8 +144,7 @@ server.tool(
 );
 
 server.tool(
-  "list_task_comments",
-  "Get all comments on a task",
+  "list_task_comments", "Get all comments on a task",
   { task_gid: z.string() },
   async ({ task_gid }) => {
     const data = await asana(`/tasks/${task_gid}/stories?opt_fields=gid,text,created_at,created_by`);
@@ -193,21 +153,16 @@ server.tool(
 );
 
 server.tool(
-  "add_task_dependency",
-  "Set task dependency",
+  "add_task_dependency", "Set task dependency",
   { task_gid: z.string(), depends_on_gid: z.string() },
   async ({ task_gid, depends_on_gid }) => {
-    const data = await asana(`/tasks/${task_gid}/addDependencies`, "POST", {
-      data: { dependencies: [depends_on_gid] },
-    });
+    const data = await asana(`/tasks/${task_gid}/addDependencies`, "POST", { data: { dependencies: [depends_on_gid] } });
     return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-// ── SECTIONS ────────────────────────────────────────────────────────────────
 server.tool(
-  "list_sections",
-  "List sections in a project",
+  "list_sections", "List sections in a project",
   { project_gid: z.string() },
   async ({ project_gid }) => {
     const data = await asana(`/projects/${project_gid}/sections?opt_fields=gid,name`);
@@ -216,8 +171,7 @@ server.tool(
 );
 
 server.tool(
-  "move_task_to_section",
-  "Move task to a section",
+  "move_task_to_section", "Move task to a section",
   { section_gid: z.string(), task_gid: z.string() },
   async ({ section_gid, task_gid }) => {
     await asana(`/sections/${section_gid}/addTask`, "POST", { data: { task: task_gid } });
@@ -225,10 +179,8 @@ server.tool(
   }
 );
 
-// ── SEARCH ───────────────────────────────────────────────────────────────────
 server.tool(
-  "search_tasks",
-  "Full-text search across workspace tasks",
+  "search_tasks", "Full-text search across workspace tasks",
   { workspace_gid: z.string(), text: z.string(), completed: z.boolean().optional() },
   async ({ workspace_gid, text, completed }) => {
     let url = `/workspaces/${workspace_gid}/tasks/search?text=${encodeURIComponent(text)}&opt_fields=gid,name,completed,assignee,due_date,projects`;
@@ -238,10 +190,8 @@ server.tool(
   }
 );
 
-// ── USERS ────────────────────────────────────────────────────────────────────
 server.tool(
-  "list_users",
-  "List users in a workspace",
+  "list_users", "List users in a workspace",
   { workspace_gid: z.string() },
   async ({ workspace_gid }) => {
     const data = await asana(`/workspaces/${workspace_gid}/users?opt_fields=gid,name,email`);
@@ -249,5 +199,6 @@ server.tool(
   }
 );
 
+log.info("asana-mcp starting");
 const transport = new StdioServerTransport();
 await server.connect(transport);

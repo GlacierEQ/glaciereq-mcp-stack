@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-typecheck:
+    name: Build & Typecheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build all packages
+        run: npm run build
+
+      - name: Verify dist artifacts
+        run: |
+          for pkg in asana-mcp github-mcp confluence-mcp supabase-mcp neo4j-mcp; do
+            if [ ! -f "packages/$pkg/dist/index.js" ]; then
+              echo "❌ Missing dist for $pkg"
+              exit 1
+            else
+              echo "✅ $pkg built"
+            fi
+          done
+
+  lint:
+    name: Type Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm install
+      - name: Run tsc strict check (no emit)
+        run: npx tsc --noEmit -p packages/asana-mcp/tsconfig.json &&
+             npx tsc --noEmit -p packages/github-mcp/tsconfig.json &&
+             npx tsc --noEmit -p packages/confluence-mcp/tsconfig.json &&
+             npx tsc --noEmit -p packages/supabase-mcp/tsconfig.json &&
+             npx tsc --noEmit -p packages/neo4j-mcp/tsconfig.json
