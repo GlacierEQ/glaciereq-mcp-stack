@@ -1,143 +1,178 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-const URL_  = process.env.SUPABASE_URL!;
-const KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
-if (!URL_ || !KEY) throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY)
+  throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
 
-const REST = `${URL_}/rest/v1`;
-const RPC  = `${URL_}/rest/v1/rpc`;
-const AUTH_EP = `${URL_}/auth/v1`;
-const STORAGE = `${URL_}/storage/v1`;
-
-const headers = {
-  apikey: KEY,
-  Authorization: `Bearer ${KEY}`,
-  "Content-Type": "application/json",
-  Prefer: "return=representation",
-};
-
-async function sb(url: string, method = "GET", body?: unknown, extraHeaders?: Record<string, string>) {
-  const res = await fetch(url, {
-    method,
-    headers: { ...headers, ...extraHeaders },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) throw new Error(`Supabase ${method} ${url} → ${res.status}: ${await res.text()}`);
-  const text = await res.text();
-  return text ? JSON.parse(text) : null;
-}
+const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false },
+});
 
 const server = new McpServer({ name: "supabase-mcp", version: "1.0.0" });
 
-server.tool("list_tables", "List all tables in the public schema",
+// ── DATA OPERATIONS ─────────────────────────────────────────────────────────
+server.tool(
+  "query_table",
+  "Query rows from a Supabase table with optional filters",
+  {
+    table: z.string(),
+    select: z.string().optional(),
+    filter_column: z.string().optional(),
+    filter_value: z.string().optional(),
+    limit: z.number().optional(),
+    order_by: z.string().optional(),
+    ascending: z.boolean().optional(),
+  },
+  async ({ table, select = "*", filter_column, filter_value, limit = 100, order_by, ascending = false }) => {
+    let q = adminClient.from(table).select(select).limit(limit);
+    if (filter_column && filter_value) q = q.eq(filter_column, filter_value);
+    if (order_by) q = q.order(order_by, { ascending });
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  }
+);
+
+server.tool(
+  "insert_row",
+  "Insert a row into a Supabase table",
+  { table: z.string(), row: z.record(z.unknown()) },
+  async ({ table, row }) => {
+    const { data, error } = await adminClient.from(table).insert(row).select();
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  }
+);
+
+server.tool(
+  "update_rows",
+  "Update rows in a Supabase table",
+  {
+    table: z.string(),
+    updates: z.record(z.unknown()),
+    filter_column: z.string(),
+    filter_value: z.string(),
+  },
+  async ({ table, updates, filter_column, filter_value }) => {
+    const { data, error } = await adminClient
+      .from(table)
+      .update(updates)
+      .eq(filter_column, filter_value)
+      .select();
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  }
+);
+
+server.tool(
+  "delete_rows",
+  "Delete rows from a Supabase table",
+  { table: z.string(), filter_column: z.string(), filter_value: z.string() },
+  async ({ table, filter_column, filter_value }) => {
+    const { error } = await adminClient.from(table).delete().eq(filter_column, filter_value);
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: `Rows deleted from ${table} where ${filter_column}=${filter_value}` }] };
+  }
+);
+
+server.tool(
+  "rpc_call",
+  "Call a Supabase RPC (stored procedure/function)",
+  { fn_name: z.string(), params: z.record(z.unknown()).optional() },
+  async ({ fn_name, params = {} }) => {
+    const { data, error } = await adminClient.rpc(fn_name, params);
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  }
+);
+
+server.tool(
+  "upsert_row",
+  "Upsert (insert or update) a row in a Supabase table",
+  { table: z.string(), row: z.record(z.unknown()), on_conflict: z.string().optional() },
+  async ({ table, row, on_conflict }) => {
+    let q = adminClient.from(table).upsert(row);
+    if (on_conflict) q = adminClient.from(table).upsert(row, { onConflict: on_conflict });
+    const { data, error } = await q.select();
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  }
+);
+
+// ── STORAGE ──────────────────────────────────────────────────────────────────
+server.tool(
+  "list_storage_buckets",
+  "List all Supabase Storage buckets",
   {},
   async () => {
-    const d = await sb(`${REST}/pg_catalog.pg_tables?select=tablename,schemaname&schemaname=eq.public`);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
+    const { data, error } = await adminClient.storage.listBuckets();
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-server.tool("select", "Query rows from a table",
-  { table: z.string(), select: z.string().optional(), filter: z.string().optional(), limit: z.number().optional(), order: z.string().optional() },
-  async ({ table, select = "*", filter, limit = 100, order }) => {
-    let url = `${REST}/${table}?select=${select}&limit=${limit}`;
-    if (filter) url += `&${filter}`;
-    if (order)  url += `&order=${order}`;
-    const d = await sb(url);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
+server.tool(
+  "list_storage_files",
+  "List files in a storage bucket/path",
+  { bucket: z.string(), path: z.string().optional() },
+  async ({ bucket, path = "" }) => {
+    const { data, error } = await adminClient.storage.from(bucket).list(path);
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-server.tool("insert", "Insert one or more rows into a table",
-  { table: z.string(), rows: z.array(z.record(z.unknown())) },
-  async ({ table, rows }) => {
-    const d = await sb(`${REST}/${table}`, "POST", rows);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
+server.tool(
+  "get_public_url",
+  "Get public URL for a storage file",
+  { bucket: z.string(), path: z.string() },
+  async ({ bucket, path }) => {
+    const { data } = adminClient.storage.from(bucket).getPublicUrl(path);
+    return { content: [{ type: "text", text: data.publicUrl }] };
   }
 );
 
-server.tool("update", "Update rows matching a filter",
-  { table: z.string(), filter: z.string(), data: z.record(z.unknown()) },
-  async ({ table, filter, data }) => {
-    const d = await sb(`${REST}/${table}?${filter}`, "PATCH", data);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
-  }
-);
-
-server.tool("upsert", "Upsert rows (insert or update on conflict)",
-  { table: z.string(), rows: z.array(z.record(z.unknown())), on_conflict: z.string().optional() },
-  async ({ table, rows, on_conflict }) => {
-    const xH: Record<string, string> = { Prefer: "resolution=merge-duplicates,return=representation" };
-    if (on_conflict) xH["Prefer"] += `,on_conflict=${on_conflict}`;
-    const d = await sb(`${REST}/${table}`, "POST", rows, xH);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
-  }
-);
-
-server.tool("delete_rows", "Delete rows matching a filter",
-  { table: z.string(), filter: z.string() },
-  async ({ table, filter }) => {
-    await sb(`${REST}/${table}?${filter}`, "DELETE");
-    return { content: [{ type: "text", text: `Deleted from ${table} where ${filter}.` }] };
-  }
-);
-
-server.tool("call_rpc", "Call a Supabase RPC / stored function",
-  { function_name: z.string(), params: z.record(z.unknown()).optional() },
-  async ({ function_name, params }) => {
-    const d = await sb(`${RPC}/${function_name}`, "POST", params ?? {});
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
-  }
-);
-
-server.tool("exec_sql", "Execute raw SQL via the pg extension (requires pg_net or edge function)",
-  { sql: z.string() },
-  async ({ sql }) => {
-    const d = await sb(`${RPC}/exec_sql`, "POST", { sql });
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
-  }
-);
-
-server.tool("list_storage_buckets", "List Supabase storage buckets",
-  {},
-  async () => {
-    const d = await sb(`${STORAGE}/bucket`);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
-  }
-);
-
-server.tool("list_storage_objects", "List objects in a storage bucket",
-  { bucket: z.string(), prefix: z.string().optional() },
-  async ({ bucket, prefix = "" }) => {
-    const d = await sb(`${STORAGE}/object/list/${bucket}`, "POST", { prefix, limit: 100 });
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
-  }
-);
-
-server.tool("list_auth_users", "List all auth users (admin only)",
+// ── AUTH ─────────────────────────────────────────────────────────────────────
+server.tool(
+  "list_users",
+  "List all Supabase Auth users (admin)",
   { page: z.number().optional(), per_page: z.number().optional() },
   async ({ page = 1, per_page = 50 }) => {
-    const d = await sb(`${AUTH_EP}/admin/users?page=${page}&per_page=${per_page}`);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: per_page });
+    if (error) throw new Error(error.message);
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify(
+            data.users.map((u) => ({ id: u.id, email: u.email, created_at: u.created_at, last_sign_in: u.last_sign_in_at })),
+            null,
+            2
+          ),
+        },
+      ],
+    };
   }
 );
 
-server.tool("get_auth_user", "Get a specific auth user by ID",
-  { user_id: z.string() },
-  async ({ user_id }) => {
-    const d = await sb(`${AUTH_EP}/admin/users/${user_id}`);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
-  }
-);
-
-server.tool("list_edge_functions", "List deployed Edge Functions",
-  {},
-  async () => {
-    const d = await sb(`${URL_}/functions/v1`);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
+server.tool(
+  "full_text_search",
+  "Full-text search on a Supabase table column",
+  { table: z.string(), column: z.string(), query: z.string(), limit: z.number().optional() },
+  async ({ table, column, query, limit = 20 }) => {
+    const { data, error } = await adminClient
+      .from(table)
+      .select("*")
+      .textSearch(column, query)
+      .limit(limit);
+    if (error) throw new Error(error.message);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 

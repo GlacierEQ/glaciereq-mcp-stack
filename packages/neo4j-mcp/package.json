@@ -3,10 +3,14 @@
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
-  "scripts": { "build": "tsc -b", "dev": "ts-node --esm src/index.ts" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -p tsconfig.json --watch"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "zod": "^3.23.0",
-    "neo4j-driver": "^5.20.0"
+    "neo4j-driver": "^5.20.0",
+    "zod": "^3.23.0"
   }
 }

@@ -1,11 +1,13 @@
 {
   "mcpServers": {
-    "asana": {
+    "asana-mcp": {
       "command": "node",
       "args": ["packages/asana-mcp/dist/index.js"],
-      "env": { "ASANA_API_TOKEN": "${ASANA_API_TOKEN}" }
+      "env": {
+        "ASANA_API_TOKEN": "${ASANA_API_TOKEN}"
+      }
     },
-    "github": {
+    "github-mcp": {
       "command": "node",
       "args": ["packages/github-mcp/dist/index.js"],
       "env": {
@@ -13,7 +15,7 @@
         "GITHUB_USER": "${GITHUB_USER}"
       }
     },
-    "confluence": {
+    "confluence-mcp": {
       "command": "node",
       "args": ["packages/confluence-mcp/dist/index.js"],
       "env": {
@@ -22,15 +24,16 @@
         "CONFLUENCE_EMAIL": "${CONFLUENCE_EMAIL}"
       }
     },
-    "supabase": {
+    "supabase-mcp": {
       "command": "node",
       "args": ["packages/supabase-mcp/dist/index.js"],
       "env": {
         "SUPABASE_URL": "${SUPABASE_URL}",
-        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+        "SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}",
+        "SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}"
       }
     },
-    "neo4j": {
+    "neo4j-mcp": {
       "command": "node",
       "args": ["packages/neo4j-mcp/dist/index.js"],
       "env": {

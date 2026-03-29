@@ -4,8 +4,9 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -b",
-    "dev": "ts-node --esm src/index.ts"
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsc -p tsconfig.json --watch"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",

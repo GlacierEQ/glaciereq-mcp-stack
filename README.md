@@ -1,47 +1,61 @@
-# 🔌 glaciereq-mcp-stack
+# glaciereq-mcp-stack
 
-> Production-grade TypeScript MCP server monorepo — 5 servers, 67 total tools  
-> **GlacierEQ | Casey Barton | APEX Mesh v2.1**
+Production-grade TypeScript monorepo — 5 MCP servers running in parallel.
 
-## Servers
+## Packages
 
 | Package | Tools | Description |
-|---------|-------|-------------|
-| `asana-mcp` | 16 | Workspaces, Projects, Tasks, Subtasks, Comments, Dependencies, Sections, Search, Users |
-| `github-mcp` | 14 | Repos, Files, Issues, PRs, Branches, Search, Commits, Releases, Actions |
-| `confluence-mcp` | 12 | Spaces, Pages, Search, Create/Update, Labels, Comments, Attachments, Templates |
-| `supabase-mcp` | 13 | Tables, CRUD, RPC, Storage, Auth users, Realtime schema, Edge functions, SQL exec |
-| `neo4j-mcp` | 12 | Nodes, Relationships, Cypher exec, Schema, Case graph, Paths, Import, Bulk ops |
+|---|---|---|
+| `asana-mcp` | 16 | Workspaces, Projects, Tasks, Sections, Search, Users |
+| `github-mcp` | 14 | Repos, Branches, Issues, PRs, Files, Commits, Actions |
+| `confluence-mcp` | 11 | Spaces, Pages, Labels, Comments, Attachments |
+| `supabase-mcp` | 11 | CRUD, RPC, Storage, Auth, Full-text Search |
+| `neo4j-mcp` | 10 | Nodes, Relationships, Cypher, Schema, Shortest Path |
 
-## Quick Start
+**Total: 62 tools**
+
+## Setup
 
 ```bash
-# 1. Install
-npm install
-
-# 2. Configure
 cp .env.example .env
-# Fill in all API keys
-
-# 3. Build all
+# Fill in your credentials
+npm install
 npm run build
+```
 
-# 4. Wire into Claude Desktop (copy mcp.json to ~/.claude/mcp.json)
-cp mcp.json ~/.claude/mcp.json
+## Run individual servers
 
-# 5. Start individual servers
+```bash
 npm run start:asana
 npm run start:github
-# etc.
+npm run start:confluence
+npm run start:supabase
+npm run start:neo4j
 ```
 
-## Dev (no build step)
+## Run all servers
+
 ```bash
-npm run dev:asana
+npm run start:all
 ```
 
-## Case 1FDV-23-0001009 Graph (Neo4j)
-```cypher
-MATCH (c:Case {id: '1FDV-23-0001009'})-[:HAS_EVENT]->(e:Event)
-RETURN c, e ORDER BY e.date
+## mcp.json
+
+The `mcp.json` at repo root is pre-configured for Claude Desktop / Cursor / Windsurf.
+Copy it to your MCP client's config directory and ensure `.env` is loaded.
+
+## Architecture
+
+```
+glaciereq-mcp-stack/
+├── package.json           # Workspace root
+├── tsconfig.base.json     # Shared TS config (ES2022, Node16)
+├── .env.example           # All env vars
+├── mcp.json               # MCP client config
+└── packages/
+    ├── asana-mcp/         # Asana REST API
+    ├── github-mcp/        # GitHub REST API
+    ├── confluence-mcp/    # Confluence REST API
+    ├── supabase-mcp/      # Supabase JS client
+    └── neo4j-mcp/         # Neo4j Bolt driver
 ```

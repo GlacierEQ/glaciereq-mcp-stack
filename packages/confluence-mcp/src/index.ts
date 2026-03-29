@@ -2,22 +2,26 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const BASE  = process.env.CONFLUENCE_BASE_URL!;
-const EMAIL = process.env.CONFLUENCE_EMAIL!;
-const KEY   = process.env.CONFLUENCE_API_KEY!;
+const BASE_URL = process.env.CONFLUENCE_BASE_URL;
+const EMAIL = process.env.CONFLUENCE_EMAIL;
+const API_KEY = process.env.CONFLUENCE_API_KEY;
 
-if (!BASE || !EMAIL || !KEY) throw new Error("CONFLUENCE_BASE_URL, CONFLUENCE_EMAIL, CONFLUENCE_API_KEY required");
+if (!BASE_URL || !EMAIL || !API_KEY)
+  throw new Error("CONFLUENCE_BASE_URL, CONFLUENCE_EMAIL, and CONFLUENCE_API_KEY are required");
 
-const AUTH = Buffer.from(`${EMAIL}:${KEY}`).toString("base64");
+const BASE = `${BASE_URL}/wiki/rest/api`;
+const authHeader = "Basic " + Buffer.from(`${EMAIL}:${API_KEY}`).toString("base64");
+
 const headers = {
-  Authorization: `Basic ${AUTH}`,
+  Authorization: authHeader,
   "Content-Type": "application/json",
   Accept: "application/json",
 };
 
-async function cf(path: string, method = "GET", body?: unknown) {
-  const res = await fetch(`${BASE}/wiki/rest/api${path}`, {
-    method, headers,
+async function cfx(path: string, method = "GET", body?: unknown) {
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) throw new Error(`Confluence ${method} ${path} → ${res.status}: ${await res.text()}`);
@@ -26,117 +30,145 @@ async function cf(path: string, method = "GET", body?: unknown) {
 
 const server = new McpServer({ name: "confluence-mcp", version: "1.0.0" });
 
-server.tool("list_spaces", "List all Confluence spaces",
-  { type: z.enum(["global","personal"]).optional(), limit: z.number().optional() },
-  async ({ type, limit = 50 }) => {
-    const q = type ? `?type=${type}&limit=${limit}` : `?limit=${limit}`;
-    const d = await cf(`/space${q}`);
-    return { content: [{ type: "text", text: JSON.stringify(d.results.map((s: any) => ({ key: s.key, name: s.name, type: s.type })), null, 2) }] };
+server.tool(
+  "list_spaces",
+  "List all Confluence spaces",
+  { limit: z.number().optional(), type: z.enum(["global", "personal"]).optional() },
+  async ({ limit = 50, type }) => {
+    let url = `/space?limit=${limit}&expand=description.plain,homepage`;
+    if (type) url += `&type=${type}`;
+    const data = await cfx(url);
+    return { content: [{ type: "text", text: JSON.stringify(data.results, null, 2) }] };
   }
 );
 
-server.tool("search_pages", "Search Confluence pages with CQL",
-  { query: z.string(), space_key: z.string().optional(), limit: z.number().optional() },
-  async ({ query, space_key, limit = 25 }) => {
-    const cql = space_key ? `space=${space_key} AND text~"${query}"` : `text~"${query}"`;
-    const d = await cf(`/content/search?cql=${encodeURIComponent(cql)}&limit=${limit}&expand=space,version`);
-    return { content: [{ type: "text", text: JSON.stringify(d.results.map((p: any) => ({ id: p.id, title: p.title, space: p.space?.key, url: p._links?.webui })), null, 2) }] };
+server.tool(
+  "get_space",
+  "Get space details by key",
+  { space_key: z.string() },
+  async ({ space_key }) => {
+    const data = await cfx(`/space/${space_key}?expand=description.plain,homepage,metadata.labels`);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-server.tool("get_page", "Get Confluence page content",
-  { page_id: z.string(), expand_body: z.boolean().optional() },
-  async ({ page_id, expand_body = true }) => {
-    const expand = expand_body ? "body.storage,version,space,ancestors" : "version,space";
-    const d = await cf(`/content/${page_id}?expand=${expand}`);
-    return { content: [{ type: "text", text: JSON.stringify({ id: d.id, title: d.title, space: d.space?.key, version: d.version?.number, body: d.body?.storage?.value }, null, 2) }] };
+server.tool(
+  "search_pages",
+  "Search Confluence pages with CQL",
+  { cql: z.string(), limit: z.number().optional() },
+  async ({ cql, limit = 25 }) => {
+    const data = await cfx(`/content/search?cql=${encodeURIComponent(cql)}&limit=${limit}&expand=space,version,body.storage`);
+    return { content: [{ type: "text", text: JSON.stringify(data.results, null, 2) }] };
   }
 );
 
-server.tool("create_page", "Create a new Confluence page",
-  { space_key: z.string(), title: z.string(), body_html: z.string(), parent_id: z.string().optional() },
+server.tool(
+  "get_page",
+  "Get a Confluence page by ID",
+  { page_id: z.string(), include_body: z.boolean().optional() },
+  async ({ page_id, include_body = true }) => {
+    const expand = include_body
+      ? "body.storage,version,space,ancestors,children.page"
+      : "version,space,ancestors";
+    const data = await cfx(`/content/${page_id}?expand=${expand}`);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
+  }
+);
+
+server.tool(
+  "create_page",
+  "Create a new Confluence page",
+  {
+    space_key: z.string(),
+    title: z.string(),
+    body_html: z.string(),
+    parent_id: z.string().optional(),
+  },
   async ({ space_key, title, body_html, parent_id }) => {
-    const body: any = {
+    const payload: any = {
       type: "page",
       title,
       space: { key: space_key },
       body: { storage: { value: body_html, representation: "storage" } },
     };
-    if (parent_id) body.ancestors = [{ id: parent_id }];
-    const d = await cf("/content", "POST", body);
-    return { content: [{ type: "text", text: JSON.stringify({ id: d.id, title: d.title, url: d._links?.webui }, null, 2) }] };
+    if (parent_id) payload.ancestors = [{ id: parent_id }];
+    const data = await cfx("/content", "POST", payload);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-server.tool("update_page", "Update an existing page (requires current version)",
-  { page_id: z.string(), title: z.string(), body_html: z.string(), version_number: z.number() },
+server.tool(
+  "update_page",
+  "Update an existing Confluence page",
+  {
+    page_id: z.string(),
+    title: z.string(),
+    body_html: z.string(),
+    version_number: z.number(),
+  },
   async ({ page_id, title, body_html, version_number }) => {
-    const d = await cf(`/content/${page_id}`, "PUT", {
-      version: { number: version_number + 1 },
-      title, type: "page",
+    const data = await cfx(`/content/${page_id}`, "PUT", {
+      version: { number: version_number },
+      title,
+      type: "page",
       body: { storage: { value: body_html, representation: "storage" } },
     });
-    return { content: [{ type: "text", text: JSON.stringify({ id: d.id, title: d.title, version: d.version?.number }, null, 2) }] };
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-server.tool("get_page_children", "Get child pages of a page",
+server.tool(
+  "delete_page",
+  "Delete a Confluence page",
   { page_id: z.string() },
   async ({ page_id }) => {
-    const d = await cf(`/content/${page_id}/child/page?limit=50`);
-    return { content: [{ type: "text", text: JSON.stringify(d.results.map((p: any) => ({ id: p.id, title: p.title })), null, 2) }] };
+    await cfx(`/content/${page_id}`, "DELETE");
+    return { content: [{ type: "text", text: `Page ${page_id} deleted.` }] };
   }
 );
 
-server.tool("add_label", "Add a label to a page",
-  { page_id: z.string(), label: z.string() },
-  async ({ page_id, label }) => {
-    const d = await cf(`/content/${page_id}/label`, "POST", [{ prefix: "global", name: label }]);
-    return { content: [{ type: "text", text: JSON.stringify(d, null, 2) }] };
+server.tool(
+  "add_label_to_page",
+  "Add labels to a Confluence page",
+  { page_id: z.string(), labels: z.array(z.string()) },
+  async ({ page_id, labels }) => {
+    const payload = labels.map((name) => ({ prefix: "global", name }));
+    const data = await cfx(`/content/${page_id}/label`, "POST", payload);
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-server.tool("get_comments", "Get comments on a page",
+server.tool(
+  "get_page_children",
+  "Get child pages of a Confluence page",
   { page_id: z.string() },
   async ({ page_id }) => {
-    const d = await cf(`/content/${page_id}/child/comment?expand=body.view,version&limit=50`);
-    return { content: [{ type: "text", text: JSON.stringify(d.results.map((c: any) => ({ id: c.id, body: c.body?.view?.value, version: c.version?.number })), null, 2) }] };
+    const data = await cfx(`/content/${page_id}/child/page?expand=version,space`);
+    return { content: [{ type: "text", text: JSON.stringify(data.results, null, 2) }] };
   }
 );
 
-server.tool("add_comment", "Add a comment to a page",
-  { page_id: z.string(), body_html: z.string() },
-  async ({ page_id, body_html }) => {
-    const d = await cf("/content", "POST", {
+server.tool(
+  "add_comment_to_page",
+  "Add a comment to a Confluence page",
+  { page_id: z.string(), comment_html: z.string() },
+  async ({ page_id, comment_html }) => {
+    const data = await cfx("/content", "POST", {
       type: "comment",
       container: { id: page_id, type: "page" },
-      body: { storage: { value: body_html, representation: "storage" } },
+      body: { storage: { value: comment_html, representation: "storage" } },
     });
-    return { content: [{ type: "text", text: JSON.stringify({ id: d.id }, null, 2) }] };
+    return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
   }
 );
 
-server.tool("get_attachments", "Get attachments for a page",
+server.tool(
+  "get_attachments",
+  "Get attachments for a Confluence page",
   { page_id: z.string() },
   async ({ page_id }) => {
-    const d = await cf(`/content/${page_id}/child/attachment?limit=50`);
-    return { content: [{ type: "text", text: JSON.stringify(d.results.map((a: any) => ({ id: a.id, title: a.title, mediaType: a.metadata?.mediaType, size: a.extensions?.fileSize })), null, 2) }] };
-  }
-);
-
-server.tool("list_templates", "List page templates in a space",
-  { space_key: z.string() },
-  async ({ space_key }) => {
-    const d = await cf(`/template/page?spaceKey=${space_key}&limit=50`);
-    return { content: [{ type: "text", text: JSON.stringify(d.results?.map((t: any) => ({ id: t.templateId, name: t.name, description: t.description })), null, 2) }] };
-  }
-);
-
-server.tool("delete_page", "Delete a Confluence page",
-  { page_id: z.string() },
-  async ({ page_id }) => {
-    await cf(`/content/${page_id}`, "DELETE");
-    return { content: [{ type: "text", text: `Page ${page_id} deleted.` }] };
+    const data = await cfx(`/content/${page_id}/child/attachment`);
+    return { content: [{ type: "text", text: JSON.stringify(data.results, null, 2) }] };
   }
 );
 

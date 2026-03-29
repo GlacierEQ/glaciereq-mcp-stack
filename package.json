@@ -5,28 +5,17 @@
   "workspaces": ["packages/*"],
   "scripts": {
     "build": "tsc -b packages/*/tsconfig.json",
-    "build:asana": "tsc -b packages/asana-mcp/tsconfig.json",
-    "build:github": "tsc -b packages/github-mcp/tsconfig.json",
-    "build:confluence": "tsc -b packages/confluence-mcp/tsconfig.json",
-    "build:supabase": "tsc -b packages/supabase-mcp/tsconfig.json",
-    "build:neo4j": "tsc -b packages/neo4j-mcp/tsconfig.json",
+    "build:watch": "tsc -b packages/*/tsconfig.json --watch",
     "start:asana": "node packages/asana-mcp/dist/index.js",
     "start:github": "node packages/github-mcp/dist/index.js",
     "start:confluence": "node packages/confluence-mcp/dist/index.js",
     "start:supabase": "node packages/supabase-mcp/dist/index.js",
     "start:neo4j": "node packages/neo4j-mcp/dist/index.js",
-    "dev:asana": "npx ts-node packages/asana-mcp/src/index.ts",
-    "dev:github": "npx ts-node packages/github-mcp/src/index.ts",
-    "dev:confluence": "npx ts-node packages/confluence-mcp/src/index.ts",
-    "dev:supabase": "npx ts-node packages/supabase-mcp/src/index.ts",
-    "dev:neo4j": "npx ts-node packages/neo4j-mcp/src/index.ts",
-    "typecheck": "tsc -b packages/*/tsconfig.json --noEmit",
-    "clean": "rimraf packages/*/dist"
+    "start:all": "concurrently \"npm run start:asana\" \"npm run start:github\" \"npm run start:confluence\" \"npm run start:supabase\" \"npm run start:neo4j\""
   },
   "devDependencies": {
     "typescript": "^5.4.0",
     "@types/node": "^20.0.0",
-    "ts-node": "^10.9.2",
-    "rimraf": "^5.0.5"
+    "concurrently": "^8.2.0"
   }
 }
