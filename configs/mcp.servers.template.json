@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase"],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
+      }
+    },
+    "asana": {
+      "command": "node",
+      "args": ["servers/asana/dist/index.js"],
+      "env": {
+        "ASANA_API_TOKEN": "${ASANA_API_TOKEN}"
+      }
+    },
+    "confluence": {
+      "command": "node",
+      "args": ["servers/confluence/dist/index.js"],
+      "env": {
+        "CONFLUENCE_API_KEY": "${CONFLUENCE_API_KEY}",
+        "CONFLUENCE_BASE_URL": "${CONFLUENCE_BASE_URL}",
+        "CONFLUENCE_EMAIL": "${CONFLUENCE_EMAIL}"
+      }
+    },
+    "neo4j": {
+      "command": "node",
+      "args": ["servers/neo4j/dist/index.js"],
+      "env": {
+        "NEO4J_URI": "${NEO4J_URI}",
+        "NEO4J_USERNAME": "${NEO4J_USERNAME}",
+        "NEO4J_PASSWORD": "${NEO4J_PASSWORD}",
+        "NEO4J_DATABASE": "${NEO4J_DATABASE}"
+      }
+    }
+  }
+}
