@@ -1,22 +1,21 @@
 {
-  "repo": "glaciereq-mcp-stack",
-  "algorithm": "sha256",
-  "file_count": 15,
+  "file_count": 16,
   "hashes": {
-    "README.md": "e82b2fca90cacdf4bfd92790aaebce04a1f611dbd3e6ff72ae7856ae0069a6ba",
-    "EASTER_EGGS.md": "0c4fc58a6163b54497fc8327ec77f4293330eea4ba636e30db202836bd450900",
-    ".gitignore": "e1654ad9615f082573d26f95fcf68850bd889ee39cae609f65f1e6f0643620cb",
-    "AKOS.md": "eae48200ee1bf2ec3fe2f267668b1dd09bac66f3bd2e01420e5787413f247a07",
     ".env.example": "244f0dd6182913ae06a36341510cb6b4cc4bb4a312ad4a1c3f760fe0f9049ea4",
-    "QUALITY_ASSURANCE_MANIFEST.md": "5781c789ca6c605a5f15b80f4d9a98536080b8279718221b728fa8247af45c83",
+    "AKOS.md": "eae48200ee1bf2ec3fe2f267668b1dd09bac66f3bd2e01420e5787413f247a07",
+    "EASTER_EGGS.md": "0c4fc58a6163b54497fc8327ec77f4293330eea4ba636e30db202836bd450900",
     "HELIX_STRAND.md": "c35d7fe21fefb39ea8d622dea775d9b824fd16aed34ff7996226cec221a132a2",
-    "mastermind_sidecar.py": "57d6e71e79ef6234694b9556fc99afdcd23d3c1377113bb248c5b5a81aed2c43",
+    "QUALITY_ASSURANCE_MANIFEST.md": "5781c789ca6c605a5f15b80f4d9a98536080b8279718221b728fa8247af45c83",
+    "README.md": "9e42fd0b2d1cddf376fda2f900f5c0cff3185b860aecfd27fa9d7daa46383751",
     "SECURITY_AND_FLEET_OPS.md": "26141c0f07d95847d679de423ddb7bdee6f3e319d204383c89a58d6d3bb610c7",
-    "tests/test_mcp_router.py": "b639589b0e9e98692f0b4f619ed2cecfc4a98e5330041f7291d634d298afbb1c",
-    "docs/client-install.md": "751532b6922e21f248e67de6348dc1bb45869efb502125213d2bf386670720b5",
     "configs/mcp.servers.template.json": "e99f1af0363df458cc4a9d40a13a4c3498289bb113b3100ff2a81a28e2f04232",
-    ".github/workflows/ci.yml": "393542f8109cac2611d6ab41b8b062e6cc8be46894379568f15c0b7e2c1a639f",
+    "docs/client-install.md": "751532b6922e21f248e67de6348dc1bb45869efb502125213d2bf386670720b5",
     "manifests/glaciereq-mcp-stack.apex.repo.json": "b384e32cffe8167b110fbda60c3259fbd66f1c4817a1e96b0bfd018101a9cecc",
-    "src/mcp_router.py": "462a3c4805a42002a43373925f8bbac7c030c0933d6f7907478d6e60843b7209"
+    "mastermind_sidecar.py": "57d6e71e79ef6234694b9556fc99afdcd23d3c1377113bb248c5b5a81aed2c43",
+    "src/mcp_gateway.ts": "9bd798874e22bb46d375db73cb5bbd5d9ec0793c23d60623b20da9ad032654d5",
+    "src/mcp_router.py": "462a3c4805a42002a43373925f8bbac7c030c0933d6f7907478d6e60843b7209",
+    "src/vector_search.sql": "60a78b2ce80e3f1da7a7cac19793ff826ddc0c88b31c45dce462040ef33342f3",
+    "tests/test_mcp_gateway.py": "929b56328b26a15fa19892e2f89aa5e57d3f90aff99fee32a2bfc547fcd3f06a",
+    "tests/test_mcp_router.py": "b639589b0e9e98692f0b4f619ed2cecfc4a98e5330041f7291d634d298afbb1c"
   }
 }
