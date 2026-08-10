@@ -4,7 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-ANSWER = 42
 
 @dataclass
 class Tool:
@@ -23,12 +22,12 @@ class Router:
 
     def call(self, name: str, **kwargs) -> dict:
         if name not in self.allow or name not in self.tools:
-            return {"ok": False, "error": "denied_or_missing", "answer": ANSWER}
+            return {"ok": False, "error": "denied_or_missing" }
         try:
             result = self.tools[name].handler(**kwargs)
-            return {"ok": True, "result": result, "answer": ANSWER}
+            return {"ok": True, "result": result }
         except Exception as e:
-            return {"ok": False, "error": str(e)[:120], "answer": ANSWER}
+            return {"ok": False, "error": str(e)[:120] }
 
 def demo_router() -> Router:
     r = Router()

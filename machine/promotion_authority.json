@@ -1,0 +1,11 @@
+{
+  "schema": "glaciereq.promotion-authority-grant.v1",
+  "repository": "GlacierEQ/glaciereq-mcp-stack",
+  "source_sha": "bdd0a8c45ebd691996be90f0821fc692873338ffbd8a39b3a0aecea4751e948b",
+  "proof_receipt_digest": "cbcf9782c2d879c530f254791232dd485716d272e6c6336e6a8c082d619b9cc3",
+  "not_after": 1788927149.234226,
+  "mac": "6d1125ed2ad33e8ae3c9fc734da1e1443f3d7e1c7ac591c24612453ee4ac61e2",
+  "issuer": "local_operator_promotion_authority",
+  "verified": true,
+  "secret_ref": "src/promotion_authority.py::LOCAL_OPERATOR_SECRET"
+}

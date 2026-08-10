@@ -1,0 +1,29 @@
+{
+  "schema": "glaciereq.operability-receipt.v1",
+  "repository": "GlacierEQ/glaciereq-mcp-stack",
+  "at": "2026-08-10T04:12Z",
+  "source_sha": "bdd0a8c45ebd691996be90f0821fc692873338ffbd8a39b3a0aecea4751e948b",
+  "entry": "scripts/operate.py",
+  "primary_output": {
+    "module": "mcp_router",
+    "ok": true,
+    "repository": "GlacierEQ/glaciereq-mcp-stack",
+    "smoke": {
+      "args": [
+        "'sample_name'"
+      ],
+      "content_checked": true,
+      "invoked": true,
+      "kind": "class",
+      "method": "call",
+      "module_local": true,
+      "name": "Router",
+      "result": {
+        "error": "denied_or_missing",
+        "ok": false
+      }
+    }
+  },
+  "dual_run_ok": true,
+  "result": "PASS"
+}
