@@ -4,3 +4,20 @@ dist/
 *.js.map
 *.d.ts.map
 .DS_Store
+
+# Python bytecode / caches (elite estate hygiene)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+.env
+.DS_Store
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
