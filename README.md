@@ -19,10 +19,10 @@ Every dispatch result emits:
 
 `LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT`
 
-Example:
+Example from the repository root:
 
 ```python
-from mcp_router import Router, Tool
+from src.mcp_router import Router, Tool
 
 router = Router()
 router.register(Tool("ping", lambda: "pong"), allowed=True)
@@ -55,7 +55,7 @@ The TypeScript gateway is preserved as reference source. Its current implementat
 bash scripts/ci/verify.sh
 ```
 
-The repository-owned Public Truth Gate runs Python 3.11 and 3.13 on the exact pull-request head or push SHA and verifies the allow-list/mutation policy plus the public evidence boundary.
+The repository-owned Public Truth Gate runs Python 3.11 and 3.13 on the exact pull-request head or push SHA and verifies the allow-list/mutation policy, cold-start operability harness, and public evidence boundary.
 
 ## Nonclaims
 
