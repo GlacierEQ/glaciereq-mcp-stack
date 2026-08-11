@@ -3,9 +3,16 @@
   "repo": "GlacierEQ/glaciereq-mcp-stack",
   "pillar_id": "glaciereq-mcp-stack",
   "pillar_category": "mcp",
-  "primary_role": "Executable MCP server implementation stack for Aspen Grove and GlacierEQ tool access.",
+  "primary_role": "Policy-gated repository-local tool dispatch reference surface.",
   "status": "candidate-active",
-  "visibility": "private",
+  "visibility": "public",
+  "verified_capability": "policy-gated-local-tool-dispatch",
+  "evidence_state": "LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT",
+  "nonclaims": [
+    "no deployed MCP server",
+    "no live external provider access",
+    "no inherited GlacierEQ-wide runtime authority"
+  ],
   "architecture": {
     "family_pattern": "federated-pillars",
     "internal_pattern": "diamond",
