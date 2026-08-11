@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python -m compileall -q src tests mastermind_sidecar.py
+python -m compileall -q src tests scripts mastermind_sidecar.py
 python -m pytest -q tests
+python scripts/operate.py
 
 grep -q 'LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT' README.md
 grep -q 'LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT' src/mcp_router.py
