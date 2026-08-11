@@ -1,51 +1,75 @@
-# GlacierEQ Sovereign MCP Stack — Stdio JSON-RPC 2.0 Gateway 🌌
+# GlacierEQ MCP Stack
 
-> **Sovereign Model Context Protocol (MCP) gateway implementing stdio JSON-RPC 2.0 tool routing and PostgreSQL persistence.**
+**Repository-local allow-list tool-routing exhibit with explicit mutation policy and fail-closed dispatch.**
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6)]()
-[![SQL](https://img.shields.io/badge/SQL-PostgreSQL-blue)]()
-[![Python](https://img.shields.io/badge/Python-3.9+-blue)]()
-[![Domain](https://img.shields.io/badge/Domain-MCP%20Protocol-purple)]()
+This repository does **not** establish a deployed Model Context Protocol server, live provider connections, PostgreSQL persistence, production tool execution, or a GlacierEQ-wide agent mesh. The canonical verified capability is the in-process Python router in [`src/mcp_router.py`](src/mcp_router.py).
 
----
+## Verified capability
 
-## 🎯 For Recruiters & Hiring Managers
+The Python router provides:
 
-This repository implements the **GlacierEQ Sovereign MCP Stack** — providing standard Model Context Protocol gateways for AI agents to call tools and read resources. It demonstrates:
+- explicit tool registration without implicit execution authority;
+- a separate execution allow-list;
+- a second authorization gate for mutating tools;
+- duplicate/invalid registration rejection;
+- bounded handler failure responses that do not echo exception text;
+- deterministic local demo tools for regression testing.
 
-- **JSON-RPC 2.0 stdio router** handling request initialization, tool listing, and tool calls
-- **TypeScript strict typing** for protocol message schemas and parameter validation
-- **SQL backend storage** for persistent MCP server registration and session audit logs
-- **Inter-process isolation** preventing tool execution crashes from downing the gateway
+Every dispatch result emits:
 
-**Why this matters**: The Model Context Protocol (MCP) is becoming the universal standard connecting LLMs to tools, databases, and APIs.
+`LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT`
 
----
+Example from the repository root:
 
-## 🔬 For Engineers & Technical Reviewers
+```python
+from src.mcp_router import Router, Tool
 
-### Core Components
+router = Router()
+router.register(Tool("ping", lambda: "pong"), allowed=True)
+assert router.call("ping")["result"] == "pong"
+```
 
-| Component | Language | Purpose |
+Registration alone does not authorize execution:
+
+```python
+router = Router()
+router.register(Tool("registered", lambda: "value"))
+assert router.call("registered")["error"] == "denied_or_missing"
+```
+
+## Other preserved surfaces
+
+| Path | Current role | Evidence boundary |
 |---|---|---|
-| `src/mcp_gateway.ts` | TypeScript | Stdio JSON-RPC 2.0 server & router |
-| `src/mcp_registry.sql` | SQL | PostgreSQL schema for MCP servers and tools |
-| `src/mcp_stack.py` | Python | Gateway process launcher and supervisor |
-| `tests/` | Python | Protocol compliance test harness |
+| `src/mcp_router.py` | canonical verified local router | in-process routing only |
+| `src/mcp_gateway.ts` | TypeScript gateway reference source | not promoted as protocol-complete or production MCP proof |
+| `src/vector_search.sql` | SQL/reference artifact | no live PostgreSQL or vector backend is inferred |
+| `configs/mcp.servers.template.json` | configuration template | does not prove listed servers exist or are connected |
+| `.env.example` | empty credential-name template | contains no public credential proof or provider connectivity |
 
----
+The TypeScript gateway is preserved as reference source. Its current implementation contains a small `initialize` handler and method-not-found branch; it is **not promoted as protocol-complete** until a repository-native TypeScript protocol test/build surface proves that behavior.
 
-## 🤖 ML/AI & Programmatic Mesh Integration
-
-- **MCP Tool**: Native host for all GlacierEQ swarm tools
-- **Mastermind Sidecar**: Direct status publishing to APEX Highway mesh
-- **SHA-256 Integrity**: Tracked in `.integrity/file_hashes.json`
-
----
-
-## ⚡ Quick Start
+## Native proof
 
 ```bash
-python3 src/mcp_stack.py
-python3 tests/test_mcp_gateway.py
+bash scripts/ci/verify.sh
 ```
+
+The repository-owned Public Truth Gate runs Python 3.11 and 3.13 on the exact pull-request head or push SHA and verifies the allow-list/mutation policy, cold-start operability harness, and public evidence boundary.
+
+## Nonclaims
+
+A green repository workflow does **not** establish:
+
+- MCP specification compliance beyond the behavior directly exercised by repository tests;
+- stdio/network server deployment;
+- live Asana, GitHub, Confluence, Supabase, Neo4j, PostgreSQL, or other provider access;
+- persistent registry/session storage;
+- child-process crash isolation;
+- autonomous external actions;
+- live Mastermind/APEX/AKOS runtime connectivity;
+- credentials, proprietary access, production authority, or third-party affiliation.
+
+## Portfolio role
+
+The transferable capability is **policy-gated local tool dispatch**. Architecture references to AKOS or other GlacierEQ repositories are topology/context only and do not inherit their runtime or proof state.

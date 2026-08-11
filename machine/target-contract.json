@@ -2,21 +2,25 @@
   "schema": "glaciereq.repo-target-contract.v1",
   "identity": {
     "repository_id": "GlacierEQ/glaciereq-mcp-stack",
-    "family": "elite-estate"
+    "family": "local-tool-routing"
   },
   "current": {
-    "state": "PROMOTED",
+    "state": "TESTED",
     "implemented": true,
     "tested": true,
     "deployed": false
   },
+  "verified_capability": "policy-gated-local-tool-dispatch",
   "nonclaims": [
-    "no employer affiliation",
-    "no production deployment without receipt"
+    "no production MCP deployment",
+    "no live provider connectivity",
+    "no persistent backend inferred from reference artifacts",
+    "no GlacierEQ-wide runtime authority inherited from sibling repositories",
+    "no production deployment without external receipt"
   ],
   "donor_plan": {
     "mode": "none",
     "donors": []
   },
-  "frozen_at": "2026-08-10T04:12Z"
+  "truth_hardened_at": "2026-08-10T04:00:00Z"
 }
