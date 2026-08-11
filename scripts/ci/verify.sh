@@ -8,7 +8,16 @@ python scripts/operate.py
 grep -q 'LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT' README.md
 grep -q 'LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT' src/mcp_router.py
 grep -q 'not promoted as protocol-complete' README.md
-! grep -q 'ANSWER = 42' src/mcp_router.py
-! grep -q 'answer": ANSWER' src/mcp_router.py
-! grep -q 'hyper-scaling' machine/capabilities.json
-! grep -q 'HYPER_VALIDATED' machine/excellence-state.json
+
+if grep -Fq -- 'ANSWER = 42' src/mcp_router.py; then
+  exit 1
+fi
+if grep -Fq -- 'answer": ANSWER' src/mcp_router.py; then
+  exit 1
+fi
+if grep -Fq -- 'hyper-scaling' machine/capabilities.json; then
+  exit 1
+fi
+if grep -Fq -- 'HYPER_VALIDATED' machine/excellence-state.json; then
+  exit 1
+fi
