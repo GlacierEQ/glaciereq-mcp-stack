@@ -29,7 +29,7 @@ jobs:
           expected="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
           test "$(git rev-parse HEAD)" = "$expected"
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git fetch --no-tags origin "${{ github.event.pull_request.base.sha }}"
+            git cat-file -e "${{ github.event.pull_request.base.sha }}^{commit}"
             git merge-base --is-ancestor "${{ github.event.pull_request.base.sha }}" HEAD
           fi
 
