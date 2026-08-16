@@ -8,7 +8,8 @@
     "state": "TESTED",
     "implemented": true,
     "tested": true,
-    "deployed": false
+    "deployed": false,
+    "mcp_packages_present": true
   },
   "verified_capability": "policy-gated-local-tool-dispatch",
   "nonclaims": [
@@ -22,5 +23,15 @@
     "mode": "none",
     "donors": []
   },
-  "truth_hardened_at": "2026-08-10T04:00:00Z"
+  "truth_hardened_at": "2026-08-10T04:00:00Z",
+  "implemented_capability": "credentialed-stdio-mcp-server-packages",
+  "planes": {
+    "verified": [
+      "policy-gated-local-tool-dispatch"
+    ],
+    "implemented": [
+      "credentialed-stdio-mcp-server-packages"
+    ],
+    "notes": "Local router is exact-head verified. MCP packages are restored source (stdio servers) requiring credentials and npm build; not claimed as deployed mesh."
+  }
 }

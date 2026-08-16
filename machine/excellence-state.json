@@ -62,5 +62,11 @@
   "supersedes": {
     "generic_migration_state": "PROMOTED",
     "reason": "generic migration labels exceeded repository-native proof and contained placeholder proof identity"
+  },
+  "implemented_capability": "credentialed-stdio-mcp-server-packages",
+  "recovery": {
+    "incident": "ESTATE_CAPABILITY_NEUTRALIZATION_2026-08-15",
+    "action": "restored packages/* from pre-7ca6ef0 donor without deleting local router",
+    "law": "MAXIMUM_COHERENT_ADVANCE"
   }
 }

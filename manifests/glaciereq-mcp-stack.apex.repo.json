@@ -3,7 +3,7 @@
   "repo": "GlacierEQ/glaciereq-mcp-stack",
   "pillar_id": "glaciereq-mcp-stack",
   "pillar_category": "mcp",
-  "primary_role": "Policy-gated repository-local tool dispatch reference surface.",
+  "primary_role": "Local allowlist router (verified) + credentialed MCP server packages (implemented)",
   "status": "candidate-active",
   "visibility": "public",
   "verified_capability": "policy-gated-local-tool-dispatch",
@@ -16,8 +16,18 @@
   "architecture": {
     "family_pattern": "federated-pillars",
     "internal_pattern": "diamond",
-    "diamond_vertices": ["intake", "filter", "amplify", "output"],
-    "helix_strands": ["defense", "offense"],
+    "diamond_vertices": [
+      "intake",
+      "filter",
+      "amplify",
+      "output"
+    ],
+    "helix_strands": [
+      "defense",
+      "offense"
+    ],
     "strand_assignment": "shared-rung"
-  }
+  },
+  "implemented_capability": "credentialed-stdio-mcp-server-packages",
+  "implemented_evidence_state": "MCP_PACKAGES_RESTORED_CREDENTIAL_GATED_NOT_ESTATE_MESH"
 }
