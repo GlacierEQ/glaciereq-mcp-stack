@@ -1,53 +1,64 @@
 # GlacierEQ MCP Stack
 
-**Repository-local allow-list tool-routing exhibit with explicit mutation policy and fail-closed dispatch.**
+**Dual-plane MCP laboratory:** verified in-process allow-list router **plus** restored credential-gated stdio MCP server packages.
 
-This repository does **not** establish a deployed Model Context Protocol server, live provider connections, PostgreSQL persistence, production tool execution, or a GlacierEQ-wide agent mesh. The canonical verified capability is the in-process Python router in [`src/mcp_router.py`](src/mcp_router.py).
+This repository is **not** a GlacierEQ-wide agent mesh and does **not** claim a production multi-tenant MCP cloud. Governance routes power; it does not amputate mechanisms.
 
-## Verified capability
+## Planes
 
-The Python router provides:
+| Plane | Capability | Evidence token | How to prove |
+|---|---|---|---|
+| **VERIFIED** | `policy-gated-local-tool-dispatch` | `LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT` | `bash scripts/ci/verify.sh` |
+| **IMPLEMENTED** | `credentialed-stdio-mcp-server-packages` | `MCP_PACKAGES_RESTORED_CREDENTIAL_GATED_NOT_ESTATE_MESH` | packages present + `npm` build; servers start only with credentials |
 
-- explicit tool registration without implicit execution authority;
-- a separate execution allow-list;
-- a second authorization gate for mutating tools;
-- duplicate/invalid registration rejection;
-- bounded handler failure responses that do not echo exception text;
-- deterministic local demo tools for regression testing.
+### Verified plane — local router
 
-Every dispatch result emits:
+Canonical module: [`src/mcp_router.py`](src/mcp_router.py)
 
-`LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT`
-
-Example from the repository root:
+- explicit registration without implicit execution authority
+- separate execution allow-list
+- mutation gate for write tools
+- fail-closed dispatch without leaking exception text
 
 ```python
 from src.mcp_router import Router, Tool
-
 router = Router()
 router.register(Tool("ping", lambda: "pong"), allowed=True)
 assert router.call("ping")["result"] == "pong"
+assert router.call("ping")["evidence"] == "LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT"
 ```
 
-Registration alone does not authorize execution:
+### Implemented plane — restored MCP packages
 
-```python
-router = Router()
-router.register(Tool("registered", lambda: "value"))
-assert router.call("registered")["error"] == "denied_or_missing"
+Restored from pre-neutralization donor (`7ca6ef0^`) under counter-engineering recovery for incident `ESTATE_CAPABILITY_NEUTRALIZATION_2026-08-15`:
+
+| Package | Role |
+|---|---|
+| `packages/github-mcp` | GitHub API tools over stdio MCP |
+| `packages/asana-mcp` | Asana tools over stdio MCP |
+| `packages/confluence-mcp` | Confluence tools over stdio MCP |
+| `packages/supabase-mcp` | Supabase tools over stdio MCP |
+| `packages/neo4j-mcp` | Neo4j tools over stdio MCP |
+| `packages/shared` | shared env/logger/retry |
+
+Root orchestration:
+
+- `package.json` workspaces + start scripts
+- `mcp.json` client wiring template
+- `docker/*` Dockerfiles + compose
+- `ecosystem.config.cjs` process manager template
+- `scripts/health-check.ts` health probe
+
+Servers require environment credentials and are **not** asserted as currently deployed.
+
+```bash
+npm install
+npm run build
+# only with credentials:
+# npm run start:github
 ```
 
-## Other preserved surfaces
-
-| Path | Current role | Evidence boundary |
-|---|---|---|
-| `src/mcp_router.py` | canonical verified local router | in-process routing only |
-| `src/mcp_gateway.ts` | TypeScript gateway reference source | not promoted as protocol-complete or production MCP proof |
-| `src/vector_search.sql` | SQL/reference artifact | no live PostgreSQL or vector backend is inferred |
-| `configs/mcp.servers.template.json` | configuration template | does not prove listed servers exist or are connected |
-| `.env.example` | empty credential-name template | contains no public credential proof or provider connectivity |
-
-The TypeScript gateway is preserved as reference source. Its current implementation contains a small `initialize` handler and method-not-found branch; it is **not promoted as protocol-complete** until a repository-native TypeScript protocol test/build surface proves that behavior.
+The TypeScript gateway is preserved as reference source (`src/mcp_gateway.ts`); it is not promoted as protocol-complete without a dedicated TS proof surface.
 
 ## Native proof
 
@@ -55,21 +66,15 @@ The TypeScript gateway is preserved as reference source. Its current implementat
 bash scripts/ci/verify.sh
 ```
 
-The repository-owned Public Truth Gate runs Python 3.11 and 3.13 on the exact pull-request head or push SHA and verifies the allow-list/mutation policy, cold-start operability harness, and public evidence boundary.
+Public Truth Gate verifies the **verified plane** and that the **implemented plane** source tree was not re-amputated.
 
 ## Nonclaims
 
-A green repository workflow does **not** establish:
+- Not an estate-wide MCP mesh deployment
+- Not proof that third-party APIs are connected without credentials
+- Not a substitute for host-level allow-lists and secret management
+- Not affiliated with any MCP vendor product beyond standard protocol use
 
-- MCP specification compliance beyond the behavior directly exercised by repository tests;
-- stdio/network server deployment;
-- live Asana, GitHub, Confluence, Supabase, Neo4j, PostgreSQL, or other provider access;
-- persistent registry/session storage;
-- child-process crash isolation;
-- autonomous external actions;
-- live Mastermind/APEX/AKOS runtime connectivity;
-- credentials, proprietary access, production authority, or third-party affiliation.
+## Counter-engineering note
 
-## Portfolio role
-
-The transferable capability is **policy-gated local tool dispatch**. Architecture references to AKOS or other GlacierEQ repositories are topology/context only and do not inherit their runtime or proof state.
+April 2026 `APEX Upgrade: Automated Sync` deleted the package tree to satisfy a narrower truth surface. That pattern is prohibited. Recovery restores mechanisms and expands the truth model (dual-plane) instead of deleting product to match the smallest harness.

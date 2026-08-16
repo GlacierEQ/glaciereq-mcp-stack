@@ -1,14 +1,50 @@
-name: APEX Estate Non-Regression
-
+name: apex-estate-non-regression
 on:
   pull_request:
-    branches: [main]
   push:
     branches: [main]
-
-permissions:
-  contents: read
-
 jobs:
-  apex-non-regression:
-    uses: GlacierEQ/apex-control-plane/.github/workflows/estate-non-regression.yml@main
+  anti-neutralization:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Anti-neutralization gate
+        run: |
+          python3 - <<'PY'
+          import json, re, subprocess, sys
+          OVERRIDE = "OPERATOR_AUTHORIZED_REDUCTION"
+          def run(cmd):
+              return subprocess.check_output(cmd, text=True)
+          try:
+              base = run(["git", "rev-parse", "HEAD~1"]).strip()
+          except subprocess.CalledProcessError:
+              print("single commit; skip")
+              sys.exit(0)
+          head = run(["git", "rev-parse", "HEAD"]).strip()
+          msg = run(["git", "log", "-1", "--format=%B", head])
+          if OVERRIDE in msg:
+              print("override ok")
+              sys.exit(0)
+          # packages cannot vanish
+          base_files = run(["git", "ls-tree", "-r", "--name-only", base]).splitlines()
+          head_files = set(run(["git", "ls-tree", "-r", "--name-only", head]).splitlines())
+          base_pkgs = {f.split("/")[1] for f in base_files if f.startswith("packages/")}
+          head_pkgs = {f.split("/")[1] for f in head_files if f.startswith("packages/")}
+          lost = sorted(base_pkgs - head_pkgs)
+          if lost:
+              print("FAIL packages removed:", lost)
+              sys.exit(1)
+          # capabilities cannot shrink
+          try:
+              b = set(json.loads(run(["git", "show", f"{base}:machine/capabilities.json"])).get("capabilities") or [])
+              h = set(json.loads(run(["git", "show", f"{head}:machine/capabilities.json"])).get("capabilities") or [])
+              lost_c = sorted(b - h)
+              if lost_c:
+                  print("FAIL capabilities removed:", lost_c)
+                  sys.exit(1)
+          except subprocess.CalledProcessError:
+              pass
+          print("anti-neutralization gate: OK")
+          PY

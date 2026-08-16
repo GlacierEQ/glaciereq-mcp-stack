@@ -1,1 +1,17 @@
-{"capabilities":["policy-gated-local-tool-dispatch"]}
+{
+  "capabilities": [
+    "policy-gated-local-tool-dispatch",
+    "credentialed-stdio-mcp-server-packages"
+  ],
+  "planes": {
+    "verified": [
+      "policy-gated-local-tool-dispatch"
+    ],
+    "implemented": [
+      "credentialed-stdio-mcp-server-packages"
+    ],
+    "notes": "Local router is exact-head verified. MCP packages are restored source (stdio servers) requiring credentials and npm build; not claimed as deployed mesh."
+  },
+  "evidence_token_verified": "LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT",
+  "evidence_token_implemented": "MCP_PACKAGES_RESTORED_CREDENTIAL_GATED_NOT_ESTATE_MESH"
+}
