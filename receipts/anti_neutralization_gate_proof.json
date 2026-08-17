@@ -1,0 +1,90 @@
+{
+  "capabilities_sha256": "43717cf6606b10b5c362845c4ec7e1581f7371c049b73bd5c2b03051f5d70d06",
+  "companion_mechanism_id": "mcp_package_restore",
+  "decision": {
+    "code": "PASS",
+    "detail": "Surface intact; dual-plane tokens honest; no unauthorized reduction",
+    "evidence": {
+      "current_capabilities": [
+        "credentialed-stdio-mcp-server-packages",
+        "policy-gated-local-tool-dispatch"
+      ],
+      "gate": "PASS",
+      "implemented_token": "MCP_PACKAGES_RESTORED_CREDENTIAL_GATED_NOT_ESTATE_MESH",
+      "package_surface": {
+        "complete": true,
+        "implemented_token": "MCP_PACKAGES_RESTORED_CREDENTIAL_GATED_NOT_ESTATE_MESH",
+        "mcp_servers": [
+          "asana-mcp",
+          "confluence-mcp",
+          "github-mcp",
+          "neo4j-mcp",
+          "supabase-mcp"
+        ],
+        "missing": [],
+        "packages": [
+          {
+            "has_mcp_server_marker": true,
+            "line_count": 259,
+            "name": "github-mcp",
+            "present": true,
+            "source_path": "packages/github-mcp/src/index.ts"
+          },
+          {
+            "has_mcp_server_marker": true,
+            "line_count": 204,
+            "name": "asana-mcp",
+            "present": true,
+            "source_path": "packages/asana-mcp/src/index.ts"
+          },
+          {
+            "has_mcp_server_marker": true,
+            "line_count": 176,
+            "name": "confluence-mcp",
+            "present": true,
+            "source_path": "packages/confluence-mcp/src/index.ts"
+          },
+          {
+            "has_mcp_server_marker": true,
+            "line_count": 180,
+            "name": "supabase-mcp",
+            "present": true,
+            "source_path": "packages/supabase-mcp/src/index.ts"
+          },
+          {
+            "has_mcp_server_marker": true,
+            "line_count": 220,
+            "name": "neo4j-mcp",
+            "present": true,
+            "source_path": "packages/neo4j-mcp/src/index.ts"
+          },
+          {
+            "has_mcp_server_marker": false,
+            "line_count": 3,
+            "name": "shared",
+            "present": true,
+            "source_path": "packages/shared/src/index.ts"
+          }
+        ],
+        "plane": {
+          "implemented": "credentialed-stdio-mcp-server-packages",
+          "target": "credential-gated-stdio-and-optional-mesh-with-proof",
+          "verified": "policy-gated-local-tool-dispatch"
+        },
+        "verified_token": "LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT",
+        "workspaces_ok": true
+      },
+      "proposed_capabilities": [
+        "credentialed-stdio-mcp-server-packages",
+        "policy-gated-local-tool-dispatch"
+      ],
+      "removed_protected": [],
+      "repository": "GlacierEQ/glaciereq-mcp-stack",
+      "verified_token": "LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT"
+    },
+    "ok": true
+  },
+  "mcp_json_sha256": "77d3edf41571839103523f9193997d957ec07336b8cc3e5f7d4c0ba34962a804",
+  "mechanism_id": "anti_neutralization_gate",
+  "schema": "glaciereq.mcp-stack.anti-neutralization-receipt.v1"
+}
