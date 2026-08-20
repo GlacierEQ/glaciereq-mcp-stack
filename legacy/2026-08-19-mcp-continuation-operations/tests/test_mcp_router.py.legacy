@@ -18,13 +18,11 @@ def test_demo_router_executes_only_explicitly_allowed_tools() -> None:
         "evidence_state": EVIDENCE_STATE,
     }
     assert router.call("add", a=2, b=40)["result"] == 42
-    denied = router.call("evil")
-    assert denied["ok"] is False
-    assert denied["error"] == "denied_or_missing"
-    assert denied["evidence_state"] == EVIDENCE_STATE
-    assert denied["continuation"]["status"] == "continuation_required"
-    assert denied["continuation"]["code"] == "TOOL_UNREGISTERED"
-    assert denied["continuation"]["external_action_authorized"] is False
+    assert router.call("evil") == {
+        "ok": False,
+        "error": "denied_or_missing",
+        "evidence_state": EVIDENCE_STATE,
+    }
 
 
 def test_registration_does_not_implicitly_grant_execution() -> None:

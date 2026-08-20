@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from mcp_continuation import gate_continuation
 from mcp_package_surface import (
     IMPLEMENTED_TOKEN,
     inventory_packages,
@@ -38,7 +37,6 @@ class GateDecision:
     code: str
     detail: str
     evidence: dict[str, Any]
-    continuation: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -46,18 +44,7 @@ class GateDecision:
             "code": self.code,
             "detail": self.detail,
             "evidence": self.evidence,
-            "continuation": self.continuation,
         }
-
-
-def _recovery_decision(code: str, detail: str, evidence: dict[str, Any]) -> GateDecision:
-    return GateDecision(
-        ok=False,
-        code=code,
-        detail=detail,
-        evidence=evidence,
-        continuation=gate_continuation(code, detail).to_dict(),
-    )
 
 
 def repository_root() -> Path:
@@ -93,18 +80,20 @@ def evaluate_merge_gate(
     inv = inventory_packages(base)
     evidence["package_surface"] = inv.to_dict()
     if not ok_surface:
-        return _recovery_decision(
-            "PACKAGE_SURFACE_AMPUTATED",
-            surface_err or "provider surface incomplete",
-            evidence,
+        return GateDecision(
+            ok=False,
+            code="PACKAGE_SURFACE_AMPUTATED",
+            detail=surface_err or "provider surface incomplete",
+            evidence=evidence,
         )
 
     caps_path = base / "machine" / "capabilities.json"
     if not caps_path.is_file():
-        return _recovery_decision(
-            "CAPABILITIES_MISSING",
-            "machine/capabilities.json required",
-            evidence,
+        return GateDecision(
+            ok=False,
+            code="CAPABILITIES_MISSING",
+            detail="machine/capabilities.json required",
+            evidence=evidence,
         )
     caps_doc = _load_json(caps_path)
     current = set(caps_doc.get("capabilities") or [])
@@ -113,10 +102,11 @@ def evaluate_merge_gate(
     evidence["verified_token"] = caps_doc.get("evidence_token_verified")
 
     if caps_doc.get("evidence_token_implemented") != IMPLEMENTED_TOKEN:
-        return _recovery_decision(
-            "IMPLEMENTED_TOKEN_DRIFT",
-            "evidence_token_implemented must remain MCP_PACKAGES_RESTORED…",
-            evidence,
+        return GateDecision(
+            ok=False,
+            code="IMPLEMENTED_TOKEN_DRIFT",
+            detail="evidence_token_implemented must remain MCP_PACKAGES_RESTORED…",
+            evidence=evidence,
         )
 
     proposed = set(proposed_capabilities) if proposed_capabilities is not None else current
@@ -127,13 +117,14 @@ def evaluate_merge_gate(
     if removed:
         authorized = reduction_token == OPERATOR_AUTHORIZED_REDUCTION
         if not authorized or not (reduction_reason or "").strip():
-            return _recovery_decision(
-                "UNAUTHORIZED_CAPABILITY_REDUCTION",
-                (
+            return GateDecision(
+                ok=False,
+                code="UNAUTHORIZED_CAPABILITY_REDUCTION",
+                detail=(
                     "Protected capabilities removed without "
                     f"{OPERATOR_AUTHORIZED_REDUCTION} + reason: {sorted(removed)}"
                 ),
-                evidence,
+                evidence=evidence,
             )
         evidence["reduction_authorized"] = True
         evidence["reduction_reason"] = reduction_reason
@@ -141,10 +132,11 @@ def evaluate_merge_gate(
     # Require dual-plane notes honesty
     planes = caps_doc.get("planes") or {}
     if "credentialed-stdio-mcp-server-packages" not in (planes.get("implemented") or []):
-        return _recovery_decision(
-            "PLANE_IMPLEMENTED_MISSING",
-            "planes.implemented must list credentialed-stdio-mcp-server-packages",
-            evidence,
+        return GateDecision(
+            ok=False,
+            code="PLANE_IMPLEMENTED_MISSING",
+            detail="planes.implemented must list credentialed-stdio-mcp-server-packages",
+            evidence=evidence,
         )
 
     evidence["gate"] = "PASS"

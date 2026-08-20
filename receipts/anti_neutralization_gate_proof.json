@@ -3,6 +3,7 @@
   "companion_mechanism_id": "mcp_package_restore",
   "decision": {
     "code": "PASS",
+    "continuation": null,
     "detail": "Surface intact; dual-plane tokens honest; no unauthorized reduction",
     "evidence": {
       "current_capabilities": [

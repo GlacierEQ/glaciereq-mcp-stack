@@ -11,8 +11,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from mcp_continuation import router_continuation
-
 EVIDENCE_STATE = "LOCAL_ALLOWLIST_ROUTER_NOT_EXTERNAL_MCP_DEPLOYMENT"
 
 
@@ -68,63 +66,18 @@ class Router:
         self.allow.discard(name)
         self.allow_mutating.discard(name)
 
-    def inspect(self, name: str | None = None) -> dict[str, Any]:
-        """Expose declared local capability state without calling any handler."""
-        names = (name,) if name is not None else tuple(sorted(self.tools))
-        tools: list[dict[str, Any]] = []
-        for tool_name in names:
-            tool = self.tools.get(tool_name)
-            if tool is None:
-                tools.append({"name": tool_name, "registered": False, "continuation": router_continuation(name=tool_name, registered=False).to_dict()})
-                continue
-            mutation_ready = tool.read_only or tool_name in self.allow_mutating
-            tools.append(
-                {
-                    "name": tool.name,
-                    "registered": True,
-                    "read_only": tool.read_only,
-                    "allowlisted": tool.name in self.allow,
-                    "mutation_authorized": mutation_ready,
-                    "dispatch_ready": tool.name in self.allow and mutation_ready,
-                }
-            )
-        return {"evidence_state": EVIDENCE_STATE, "tools": tools}
-
-    def plan(self, name: str) -> dict[str, Any]:
-        """Return the next recovery or dispatch action without invoking a tool."""
-        tool = self.tools.get(name)
-        if tool is None:
-            return router_continuation(name=name, registered=False).to_dict()
-        if name not in self.allow:
-            return router_continuation(name=name, registered=True, read_only=tool.read_only).to_dict()
-        if not tool.read_only and name not in self.allow_mutating:
-            return router_continuation(name=name, registered=True, read_only=False).to_dict()
-        return {
-            "status": "ready_for_governed_dispatch",
-            "tool": name,
-            "read_only": tool.read_only,
-            "external_action_authorized": False,
-            "evidence_state": EVIDENCE_STATE,
-        }
-
     def call(self, name: str, **kwargs: Any) -> dict[str, Any]:
         tool = self.tools.get(name)
         if tool is None or name not in self.allow:
             return {
                 "ok": False,
                 "error": "denied_or_missing",
-                "continuation": router_continuation(
-                    name=name,
-                    registered=tool is not None,
-                    read_only=tool.read_only if tool is not None else None,
-                ).to_dict(),
                 "evidence_state": EVIDENCE_STATE,
             }
         if not tool.read_only and name not in self.allow_mutating:
             return {
                 "ok": False,
                 "error": "mutating_tool_denied",
-                "continuation": router_continuation(name=name, registered=True, read_only=False).to_dict(),
                 "evidence_state": EVIDENCE_STATE,
             }
         try:
@@ -133,7 +86,6 @@ class Router:
             return {
                 "ok": False,
                 "error": "handler_error",
-                "continuation": router_continuation(name=name, registered=True, read_only=tool.read_only, handler_failed=True).to_dict(),
                 "evidence_state": EVIDENCE_STATE,
             }
         return {
